@@ -5,9 +5,10 @@ from flask import Blueprint, render_template, request, redirect, session, url_fo
 import pandas as pd
 from datetime import datetime
 import os
+import requests
+
 
 daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates')
-
 
 @daily_report_bp.route('/step1/', methods=['GET', 'POST'])
 def step1():
@@ -20,7 +21,6 @@ def step1():
         return redirect(url_for('daily_report.step2'))
     return render_template('daily_report/step1.html', sales=session.get('sales', {}), active_page='daily-report')
 
-
 @daily_report_bp.route('/step2/', methods=['GET', 'POST'])
 def step2():
     if request.method == 'POST':
@@ -31,7 +31,6 @@ def step2():
         }
         return redirect(url_for('daily_report.step3'))
     return render_template('daily_report/step2.html', leads=session.get('leads', {}), active_page='daily-report')
-
 
 @daily_report_bp.route('/step3/', methods=['GET', 'POST'])
 def step3():
@@ -44,7 +43,6 @@ def step3():
         return redirect(url_for('daily_report.step4'))
     return render_template('daily_report/step3.html', consultations=session.get('consultations', {}), active_page='daily-report')
 
-
 @daily_report_bp.route('/step4/', methods=['GET', 'POST'])
 def step4():
     if request.method == 'POST':
@@ -55,7 +53,6 @@ def step4():
         }
         return redirect(url_for('daily_report.step5'))
     return render_template('daily_report/step4.html', opportunities=session.get('opportunities', {}), active_page='daily-report')
-
 
 @daily_report_bp.route('/step5/', methods=['GET', 'POST'])
 def step5():
@@ -78,7 +75,6 @@ def step5():
             return render_template('daily_report/submitted.html', active_page='daily-report')
     return render_template('daily_report/step5.html', active_page='daily-report')
 
-
 @daily_report_bp.route('/submit-offline', methods=['POST'])
 def submit_offline():
     data = request.get_json()
@@ -86,11 +82,9 @@ def submit_offline():
         return jsonify({"error": "No data received"}), 400
     return handle_offline_submission(data)
 
-
 @daily_report_bp.route('/')
 def home():
     return render_template('home.html', active_page='home')
-
 
 def build_full_report(attendance_done, no_show):
     return {
@@ -104,21 +98,46 @@ def build_full_report(attendance_done, no_show):
         }
     }
 
-
 def save_daily_report(report):
-    folder = "data"
-    os.makedirs(folder, exist_ok=True)
+    file_path = "reports.xlsx"
+    date = datetime.now().strftime("%Y-%m-%d")
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join(folder, f"report_{timestamp}.xlsx")
+    def add_date_column(df):
+        if not df.empty:
+            df.insert(0, 'Date', date)
+        return df
 
-    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+    if not os.path.exists(file_path):
+        with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+            for key in ["sales", "leads", "consultations", "opportunities"]:
+                df = pd.DataFrame(columns=['Date'] + list(report.get(key, {}).keys()))
+                df.to_excel(writer, sheet_name=key.capitalize(), index=False)
+
+            attendance_df = pd.DataFrame(columns=["Date", "attendance_done", "no_show"])
+            attendance_df.to_excel(writer, sheet_name="Attendance", index=False)
+
+    with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
         for key in ["sales", "leads", "consultations", "opportunities"]:
             df = pd.DataFrame(report.get(key, {}))
-            df.to_excel(writer, sheet_name=key.capitalize(), index=False)
-        attendance_df = pd.DataFrame([report.get("attendance", {})])
-        attendance_df.to_excel(writer, sheet_name="Attendance", index=False)
+            df = add_date_column(df)
+            df = df[df.drop(columns="Date").astype(str).apply(lambda row: ''.join(row).strip(), axis=1) != '']
+            if not df.empty:
+                sheet = key.capitalize()
+                start_row = writer.sheets[sheet].max_row
+                df.to_excel(writer, sheet_name=sheet, index=False, header=False, startrow=start_row)
 
+        attendance_df = pd.DataFrame([report.get("attendance", {})])
+        attendance_df.insert(0, 'Date', date)
+        if not attendance_df.drop(columns="Date").replace('', None).dropna(how='all').empty:
+            start_row = writer.sheets["Attendance"].max_row
+            attendance_df.to_excel(writer, sheet_name="Attendance", index=False, header=False, startrow=start_row)
+
+    webhook_url = os.getenv("GCHAT_WEBHOOK_URL")
+    if webhook_url:
+        try:
+            requests.post(webhook_url, json={"text": f"✅ New report submitted: {date}"})
+        except Exception as e:
+            print("⚠️ Google Chat webhook failed:", e)
 
 def handle_offline_submission(data):
     try:
