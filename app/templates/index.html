@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mt-6 space-y-6">
+
+  <!-- ✅ Offline Banner -->
+  <div id="offlineBanner" class="hidden text-red-600 font-semibold bg-red-100 p-2 rounded mb-4 text-center">
+    ⚠️ You are currently offline. Some features may be unavailable.
+  </div>
+
+  <h2 class="text-2xl font-bold figurella-pink">Welcome to Figurella</h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <!-- Daily Report Card -->
+    <a href="{{ url_for('daily_report.step1') }}" class="block bg-white rounded-2xl shadow p-6 hover:bg-gray-50 transition">
+      <h3 class="text-lg font-semibold text-gray-800">📝 Daily Report</h3>
+      <p class="text-sm text-gray-500 mt-1">Submit today's sales, leads, and performance.</p>
+    </a>
+
+    <!-- Clients Card -->
+    <a href="{{ url_for('clients.clients') }}" class="block bg-white rounded-2xl shadow p-6 hover:bg-gray-50 transition">
+      <h3 class="text-lg font-semibold text-gray-800">👥 Clients</h3>
+      <p class="text-sm text-gray-500 mt-1">View, refresh, and follow up with clients.</p>
+    </a>
+
+    <!-- Future Dashboard -->
+    <a href="#" class="block bg-white rounded-2xl shadow p-6 opacity-50 cursor-not-allowed">
+      <h3 class="text-lg font-semibold text-gray-800">📊 Dashboard (Coming Soon)</h3>
+      <p class="text-sm text-gray-500 mt-1">Visual reports and insights.</p>
+    </a>
+
+  </div>
+</div>
+
+<!-- ✅ JS to update connection status -->
+<script>
+  function updateConnectionStatus() {
+    const banner = document.getElementById("offlineBanner");
+    banner.classList.toggle("hidden", navigator.onLine);
+  }
+
+  window.addEventListener("load", updateConnectionStatus);
+  window.addEventListener("online", updateConnectionStatus);
+  window.addEventListener("offline", updateConnectionStatus);
+</script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mt-4 space-y-6">
+  <h2 class="text-2xl font-bold figurella-pink">Attendance</h2>
+
+  <form id="dailyReportForm" method="POST" onsubmit="handleOfflineFinalSubmit(event)" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Attendances Done</label>
+        <textarea name="attendance_done" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">No Show</label>
+        <textarea name="no_show" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex justify-between items-center pt-4">
+      <a href="{{ url_for('daily_report.step4') }}" class="text-sm text-gray-600 hover:underline">&larr; Back</a>
+      <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-full shadow hover:bg-green-700 transition">
+        Submit
+      </button>
+    </div>
+  </form>
+
+  <!-- Popup -->
+  <div id="popup" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 hidden z-50">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full relative">
+      <button onclick="closePopup()" class="absolute top-2 right-3 text-gray-500 text-xl font-bold">&times;</button>
+      <p class="text-center text-gray-800 text-lg mt-4">Report submitted successfully!</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function handleOfflineFinalSubmit(event) {
+  event.preventDefault();
+
+  const form = document.getElementById("dailyReportForm");
+  const attendance_done = form.attendance_done.value.trim();
+  const no_show = form.no_show.value.trim();
+
+  const step1 = JSON.parse(sessionStorage.getItem("step1") || "null");
+  const step2 = JSON.parse(sessionStorage.getItem("step2Data") || "null");
+  const step3 = JSON.parse(sessionStorage.getItem("step3Data") || "null");
+  const step4 = JSON.parse(sessionStorage.getItem("step4Data") || "null");
+
+  const fullReport = {
+    sales: step1,
+    leads: step2,
+    consultations: step3,
+    opportunities: step4,
+    attendance: { attendance_done, no_show }
+  };
+
+  if (!navigator.onLine) {
+    const queue = JSON.parse(localStorage.getItem("reportQueue") || "[]");
+    queue.push(fullReport);
+    localStorage.setItem("reportQueue", JSON.stringify(queue));
+    form.reset();
+    showPopup("💾 Report saved offline. Will auto-submit when online.");
+  } else {
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
+    hiddenInput.name = "full_report_json";
+    hiddenInput.value = JSON.stringify(fullReport);
+    form.appendChild(hiddenInput);
+    form.submit();
+  }
+}
+
+function showPopup(message) {
+  const popup = document.getElementById("popup");
+  popup.querySelector("p").textContent = message;
+  popup.classList.remove("hidden");
+}
+
+function closePopup() {
+  document.getElementById("popup").classList.add("hidden");
+}
+</script>
+{% endblock %}

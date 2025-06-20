@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mt-4 space-y-6">
+  <h2 class="text-2xl font-bold figurella-pink">Leads</h2>
+
+  <form id="leadsForm" method="POST" onsubmit="saveLeadsToSession()" class="space-y-4">
+    <div id="leads-container" class="space-y-6">
+      <!-- Dynamic lead blocks inserted here -->
+    </div>
+
+    <!-- Add Button -->
+    <button type="button" id="add-leads" class="w-full bg-white border border-gray-300 rounded-full py-2 text-sm text-gray-700 hover:bg-gray-100">
+      + Add
+    </button>
+
+    <!-- Navigation -->
+    <div class="flex justify-between items-center pt-4">
+      <a href="{{ url_for('daily_report.step1') }}" class="text-sm text-gray-600 hover:underline">&larr; Back</a>
+      <button type="submit" class="bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
+        Next →
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Block Creator -->
+<script>
+function createLeadBlock(name = "", date = "", source = "") {
+  const block = document.createElement("div");
+  block.className = "bg-white rounded-xl shadow p-4 space-y-3";
+  block.innerHTML = `
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Lead Name</label>
+      <textarea name="lead_name" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${name}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Lead Date</label>
+      <textarea name="lead_date" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${date}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Lead Source</label>
+      <textarea name="lead_source" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${source}</textarea>
+    </div>
+  `;
+  return block;
+}
+</script>
+
+<!-- Load From Storage -->
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("leads-container");
+  const saved = JSON.parse(sessionStorage.getItem("step2Data") || "null");
+
+  if (saved && saved.name?.length) {
+    for (let i = 0; i < saved.name.length; i++) {
+      container.appendChild(createLeadBlock(saved.name[i], saved.date[i], saved.source[i]));
+    }
+  } else {
+    for (let i = 0; i < 3; i++) {
+      container.appendChild(createLeadBlock());
+    }
+  }
+});
+</script>
+
+<!-- Add New Block -->
+<script>
+document.getElementById("add-leads").addEventListener("click", () => {
+  document.getElementById("leads-container").appendChild(createLeadBlock());
+});
+</script>
+
+<!-- Save to sessionStorage -->
+<script>
+function saveLeadsToSession() {
+  const form = document.getElementById("leadsForm");
+  const data = {
+    name: Array.from(form.querySelectorAll('[name="lead_name"]')).map(el => el.value),
+    date: Array.from(form.querySelectorAll('[name="lead_date"]')).map(el => el.value),
+    source: Array.from(form.querySelectorAll('[name="lead_source"]')).map(el => el.value),
+  };
+  sessionStorage.setItem("step2Data", JSON.stringify(data));
+}
+</script>
+{% endblock %}

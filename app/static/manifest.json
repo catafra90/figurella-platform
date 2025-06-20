@@ -1,0 +1,15 @@
+{
+  "name": "Figurella",
+  "short_name": "Figurella",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#cc0066",
+  "icons": [
+    {
+      "src": "/static/images/figurella-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

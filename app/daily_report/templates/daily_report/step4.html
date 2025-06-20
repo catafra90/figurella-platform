@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mt-4 space-y-6">
+  <h2 class="text-2xl font-bold figurella-pink">Opportunities</h2>
+
+  <form id="opportunityForm" method="POST" onsubmit="saveOpportunitiesToSession()" class="space-y-4">
+    <div id="opportunity-container" class="space-y-6">
+      <!-- Opportunity blocks injected here -->
+    </div>
+
+    <!-- Add Opportunity Button -->
+    <button type="button" id="add-opportunity" class="w-full bg-white border border-gray-300 rounded-full py-2 text-sm text-gray-700 hover:bg-gray-100">
+      + Add
+    </button>
+
+    <!-- Navigation Buttons -->
+    <div class="flex justify-between items-center pt-4">
+      <a href="{{ url_for('daily_report.step3') }}" class="text-sm text-gray-600 hover:underline">&larr; Back</a>
+      <button type="submit" class="bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
+        Next →
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Template Generator -->
+<script>
+function createOpportunityBlock(name = "", provider = "", description = "") {
+  const block = document.createElement("div");
+  block.className = "bg-white rounded-xl shadow p-4 space-y-3";
+  block.innerHTML = `
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Opportunity Name</label>
+      <textarea name="opportunity_opportunity_name" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${name}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Opportunity Provider</label>
+      <textarea name="opportunity_opportunity_provider" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${provider}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Opportunity Description</label>
+      <textarea name="opportunity_opportunity_description" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${description}</textarea>
+    </div>
+  `;
+  return block;
+}
+</script>
+
+<!-- Load from sessionStorage -->
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("opportunity-container");
+  const saved = JSON.parse(sessionStorage.getItem("step4Data") || "null");
+
+  if (saved && saved.name?.length) {
+    for (let i = 0; i < saved.name.length; i++) {
+      container.appendChild(
+        createOpportunityBlock(saved.name[i], saved.provider[i], saved.description[i])
+      );
+    }
+  } else {
+    for (let i = 0; i < 3; i++) {
+      container.appendChild(createOpportunityBlock());
+    }
+  }
+});
+</script>
+
+<!-- Add Row Button -->
+<script>
+document.getElementById("add-opportunity").addEventListener("click", () => {
+  document.getElementById("opportunity-container").appendChild(createOpportunityBlock());
+});
+</script>
+
+<!-- Save to sessionStorage -->
+<script>
+function saveOpportunitiesToSession() {
+  const form = document.getElementById("opportunityForm");
+  const data = {
+    name: [...form.querySelectorAll('[name="opportunity_opportunity_name"]')].map(el => el.value),
+    provider: [...form.querySelectorAll('[name="opportunity_opportunity_provider"]')].map(el => el.value),
+    description: [...form.querySelectorAll('[name="opportunity_opportunity_description"]')].map(el => el.value),
+  };
+  sessionStorage.setItem("step4Data", JSON.stringify(data));
+}
+</script>
+{% endblock %}
