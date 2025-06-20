@@ -1,28 +1,17 @@
+{# templates/offline.html #}
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mt-20 text-center space-y-6 px-4">
-  <h2 class="text-3xl font-bold text-gray-800">🚫 You Are Offline</h2>
-  <p class="text-gray-600 text-lg">
-    Don’t worry, your data is saved locally and will be submitted when back online.
-  </p>
-
-  <button onclick="retryConnection()" class="bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
-    Retry Connection
-  </button>
-
-  <div>
-    <a href="/" class="text-sm text-blue-600 hover:underline mt-4 inline-block">← Return to Home</a>
+  <div class="mt-20 text-center space-y-6 px-4">
+    <h2 class="text-3xl font-bold figurella-pink">🚫 You Are Offline</h2>
+    <p class="text-gray-600 text-lg">
+      Don’t worry, your data is saved locally and will be submitted when back online.
+    </p>
+    <button onclick="location.reload()" class="bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
+      Retry Connection
+    </button>
+    <div>
+      <a href="/" class="text-sm text-blue-600 hover:underline mt-4 inline-block">← Return to Home</a>
+    </div>
   </div>
-</div>
-
-<script>
-function retryConnection() {
-  if (navigator.onLine) {
-    location.href = "/";
-  } else {
-    alert("You are still offline. Please reconnect to the internet.");
-  }
-}
-</script>
 {% endblock %}

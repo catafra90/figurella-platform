@@ -1,63 +1,62 @@
-// app/static/js/service-worker.js
-
-const CACHE_NAME = "figurella-cache-v18";
+const CACHE_NAME = "figurella-cache-v1";
 const OFFLINE_URL = "/offline";
 
-const urlsToPreCache = [
-  "/", "/step1/", "/step2/", "/step3/", "/step4/", "/step5/", "/clients", "/offline",
+const ASSETS = [
+  "/", "/step1/", "/step2/", "/step3/", "/step4/", "/step5/",
+  "/static/css/tailwind.min.css",
   "/static/js/queue.js",
   "/static/js/sw-init.js",
-  "/static/css/tailwind.min.css",
   "/static/images/figurella-logo.png",
-  "/static/manifest.json"
+  "/static/manifest.json",
+  OFFLINE_URL
 ];
 
-// INSTALL: cache core assets
-self.addEventListener("install", event => {
-  event.waitUntil(
+self.addEventListener("install", evt => {
+  evt.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToPreCache))
-      .then(() => self.skipWaiting())
+      .then(cache => cache.addAll(ASSETS))
   );
+  self.skipWaiting();
 });
 
-// ACTIVATE: clean up old caches
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(oldKey => caches.delete(oldKey))
-      )
-    ).then(() => self.clients.claim())
-  );
+self.addEventListener("activate", evt => {
+  evt.waitUntil(self.clients.claim());
 });
 
-// FETCH: 
-self.addEventListener("fetch", event => {
-  // 1) Only intercept top-level navigation (i.e. user clicking links / entering URLs)
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => caches.match(OFFLINE_URL))
+self.addEventListener("fetch", evt => {
+  // Only handle GETs
+  if (evt.request.method !== "GET") return;
+
+  // HTML pages: try network first, fallback to cache, then offline page
+  if (evt.request.mode === "navigate") {
+    evt.respondWith(
+      fetch(evt.request)
+        .then(res => {
+          // update cache in background
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(evt.request, copy));
+          return res;
+        })
+        .catch(() =>
+          caches.match(evt.request).then(cached => cached || caches.match(OFFLINE_URL))
+        )
     );
     return;
   }
 
-  // 2) For all other GET requests (CSS, JS, images, etc.), use cache-first
-  if (event.request.method === "GET") {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) {
-          return cached;
+  // Other requests (CSS/JS/images): cache-first, then network
+  evt.respondWith(
+    caches.match(evt.request).then(cached => {
+      return cached || fetch(evt.request).then(res => {
+        if (res && res.status === 200 && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(evt.request, copy));
         }
-        return fetch(event.request).then(response => {
-          // (Optional) put new fetches into cache:
-          // const copy = response.clone();
-          // caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          return response;
-        });
-      })
-    );
-  }
+        return res;
+      });
+    }).catch(() => {
+      // if both fail, and it’s an image, you could return a fallback image here
+      return null;
+    })
+  );
 });
