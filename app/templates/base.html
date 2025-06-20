@@ -1,82 +1,23 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Figurella Platform</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<head> … (same as yours) … </head>
+<body class="…">
+  … navigation …
+  <main> {% block content %}{% endblock %} </main>
 
-  <!-- Tailwind CSS -->
-  <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
-
-  <!-- App Icons -->
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/figurella-logo.png') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}">
-  <meta name="apple-mobile-web-app-title" content="Figurella">
-
-  <!-- PWA Meta & Manifest -->
-  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-  <meta name="theme-color" content="#CC0066">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-  <style>
-    .figurella-pink { color: #CC0066; }
-    .bg-figurella { background-color: #CC0066; }
-  </style>
-</head>
-
-<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
-
-  <!-- Mobile Header -->
-  <header class="bg-white shadow px-4 py-3 flex justify-between items-center md:hidden">
-    <img src="{{ url_for('static', filename='images/figurella-logo.png') }}" alt="Figurella Logo" class="h-8">
-    <button id="menuToggle" class="text-gray-700 focus:outline-none text-xl">☰</button>
-  </header>
-
-  <!-- Layout -->
-  <div class="flex flex-1">
-    <aside class="hidden md:block w-64 bg-white shadow-lg p-4">
-      <img src="{{ url_for('static', filename='images/figurella-logo.png') }}" alt="Figurella Logo" class="mb-6 w-32 mx-auto">
-      <nav class="space-y-3">
-        <a href="/" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if request.endpoint == 'home.index' %}bg-gray-200{% endif %}">Home</a>
-        <a href="/step1" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if request.path.startswith('/step') %}bg-gray-200{% endif %}">Daily Report</a>
-        <a href="/clients" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if request.path.startswith('/clients') %}bg-gray-200{% endif %}">Clients</a>
-      </nav>
-    </aside>
-
-    <main class="flex-1 p-4">
-      {% block content %}{% endblock %}
-    </main>
-  </div>
-
-  <!-- Mobile Bottom Navigation -->
-  <nav class="fixed bottom-0 w-full bg-white shadow border-t md:hidden flex justify-around text-sm z-50">
-    <a href="/" class="py-2 px-4 flex-1 text-center {% if request.endpoint == 'home.index' %}text-pink-600 font-semibold{% endif %}">Home</a>
-    <a href="/step1" class="py-2 px-4 flex-1 text-center {% if request.path.startswith('/step') %}text-pink-600 font-semibold{% endif %}">Daily</a>
-    <a href="/clients" class="py-2 px-4 flex-1 text-center {% if request.path.startswith('/clients') %}text-pink-600 font-semibold{% endif %}">Clients</a>
-  </nav>
-
-  <!-- Offline Popup -->
-  <div id="offline-popup" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm mx-auto">
-      <p class="text-gray-800 text-lg mb-4">💾 Report saved offline. Will auto-submit when back online.</p>
-      <button onclick="document.getElementById('offline-popup').classList.add('hidden')" class="bg-figurella text-white px-4 py-2 rounded-full">OK</button>
+  <!-- Offline notice -->
+  <div id="offline-popup" class="fixed inset-0 hidden …">
+    <div class="bg-white p-6 …">
+      <p></p>
+      <button onclick="this.closest('#offline-popup').classList.add('hidden')">OK</button>
     </div>
   </div>
 
-  <!-- Sidebar Toggle -->
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const toggleBtn = document.getElementById('menuToggle');
-      toggleBtn?.addEventListener('click', () => {
-        document.querySelector('aside')?.classList.toggle('hidden');
-      });
-    });
+    // sidebar toggle…
   </script>
 
-  <!-- Service Worker & Queue Sync -->
-  <script src="{{ url_for('static', filename='js/sw-init.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
+  <script src="{{ url_for('static','js/sw-init.js') }}" defer></script>
+  <script src="{{ url_for('static','js/queue.js') }}" defer></script>
 </body>
 </html>
