@@ -52,8 +52,10 @@ function handleOfflineFinalSubmit(event) {
     leads: step2,
     consultations: step3,
     opportunities: step4,
-    attendance_done,
-    no_show
+    attendance: {
+      attendance_done,
+      no_show
+    }
   };
 
   if (!navigator.onLine) {

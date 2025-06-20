@@ -11,7 +11,7 @@ function queueSubmission(formData) {
   const queue = JSON.parse(localStorage.getItem("reportQueue") || "[]");
   queue.push(formData);
   localStorage.setItem("reportQueue", JSON.stringify(queue));
-  showPopup("💾 Saved offline. Will auto-submit once online.");
+  showPopup("💾 Report saved offline. Will auto-submit when back online.");
 }
 
 // Sync offline queue when back online

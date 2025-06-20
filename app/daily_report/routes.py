@@ -7,7 +7,6 @@ from datetime import datetime
 import os
 import requests
 
-
 daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates')
 
 @daily_report_bp.route('/step1/', methods=['GET', 'POST'])
@@ -109,28 +108,42 @@ def save_daily_report(report):
 
     if not os.path.exists(file_path):
         with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-            for key in ["sales", "leads", "consultations", "opportunities"]:
-                df = pd.DataFrame(columns=['Date'] + list(report.get(key, {}).keys()))
-                df.to_excel(writer, sheet_name=key.capitalize(), index=False)
-
-            attendance_df = pd.DataFrame(columns=["Date", "attendance_done", "no_show"])
-            attendance_df.to_excel(writer, sheet_name="Attendance", index=False)
+            pd.DataFrame(columns=["Date", "client_name", "package", "revenue"]).to_excel(writer, sheet_name="Sales", index=False)
+            pd.DataFrame(columns=["Date", "name", "date", "source"]).to_excel(writer, sheet_name="Leads", index=False)
+            pd.DataFrame(columns=["Date", "name", "outcome", "source"]).to_excel(writer, sheet_name="Consultations", index=False)
+            pd.DataFrame(columns=["Date", "name", "provider", "description"]).to_excel(writer, sheet_name="Opportunities", index=False)
+            pd.DataFrame(columns=["Date", "attendance_done", "no_show"]).to_excel(writer, sheet_name="Attendance", index=False)
 
     with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
-        for key in ["sales", "leads", "consultations", "opportunities"]:
-            df = pd.DataFrame(report.get(key, {}))
-            df = add_date_column(df)
-            df = df[df.drop(columns="Date").astype(str).apply(lambda row: ''.join(row).strip(), axis=1) != '']
-            if not df.empty:
-                sheet = key.capitalize()
-                start_row = writer.sheets[sheet].max_row
-                df.to_excel(writer, sheet_name=sheet, index=False, header=False, startrow=start_row)
+        sheets = writer.book.sheetnames
 
-        attendance_df = pd.DataFrame([report.get("attendance", {})])
-        attendance_df.insert(0, 'Date', date)
-        if not attendance_df.drop(columns="Date").replace('', None).dropna(how='all').empty:
+        for key, expected_cols in {
+            "sales": ["client_name", "package", "revenue"],
+            "leads": ["name", "date", "source"],
+            "consultations": ["name", "outcome", "source"],
+            "opportunities": ["name", "provider", "description"]
+        }.items():
+            raw = report.get(key, {})
+            if not raw: continue
+            df = pd.DataFrame(raw)
+            if df.empty: continue
+            df = add_date_column(df)
+
+            # Only drop 'Date' column if it exists
+            cols_to_check = [col for col in df.columns if col != "Date"]
+            if cols_to_check:
+                df = df[df[cols_to_check].astype(str).apply(lambda row: ''.join(row).strip(), axis=1) != '']
+
+            if not df.empty and key.capitalize() in sheets:
+                start_row = writer.sheets[key.capitalize()].max_row
+                df.to_excel(writer, sheet_name=key.capitalize(), index=False, header=False, startrow=start_row)
+
+        att = report.get("attendance", {})
+        att_df = pd.DataFrame([att])
+        att_df.insert(0, 'Date', date)
+        if not att_df.drop(columns="Date").replace('', None).dropna(how='all').empty:
             start_row = writer.sheets["Attendance"].max_row
-            attendance_df.to_excel(writer, sheet_name="Attendance", index=False, header=False, startrow=start_row)
+            att_df.to_excel(writer, sheet_name="Attendance", index=False, header=False, startrow=start_row)
 
     webhook_url = os.getenv("GCHAT_WEBHOOK_URL")
     if webhook_url:
@@ -138,6 +151,8 @@ def save_daily_report(report):
             requests.post(webhook_url, json={"text": f"✅ New report submitted: {date}"})
         except Exception as e:
             print("⚠️ Google Chat webhook failed:", e)
+
+
 
 def handle_offline_submission(data):
     try:
