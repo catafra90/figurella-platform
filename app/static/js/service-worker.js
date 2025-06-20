@@ -1,5 +1,5 @@
-const CACHE = "figurella-v1";
-const OFFLINE = "/offline";
+const CACHE_NAME = "figurella-cache-v18";
+const OFFLINE_URL = "/offline";
 
 const toCache = [
   "/", "/step1/", "/step2/", "/step3/", "/step4/", "/step5/", "/clients", "/offline",
