@@ -197,3 +197,117 @@ def handle_offline_submission(data):
         return jsonify({"message": "Offline report saved"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from flask import Blueprint, render_template, request, redirect, session, url_for, jsonify
+import pandas as pd
+from datetime import datetime
+import os
+import requests
+
+daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates')
+
+@daily_report_bp.route('/step1/', methods=['GET', 'POST'])
+def step1():
+    if request.method == 'POST':
+        session['sales'] = {
+            'client_name': request.form.getlist('client_name'),
+            'package':     request.form.getlist('package'),
+            'revenue':     request.form.getlist('revenue')
+        }
+        return redirect(url_for('daily_report.step2'))
+    return render_template('daily_report/step1.html',
+                           sales=session.get('sales', {}),
+                           active_page='daily-report')
+
+@daily_report_bp.route('/step2/', methods=['GET', 'POST'])
+def step2():
+    if request.method == 'POST':
+        session['leads'] = {
+            'name':   request.form.getlist('lead_name'),
+            'date':   request.form.getlist('lead_date'),
+            'source': request.form.getlist('lead_source')
+        }
+        return redirect(url_for('daily_report.step3'))
+    return render_template('daily_report/step2.html',
+                           leads=session.get('leads', {}),
+                           active_page='daily-report')
+
+@daily_report_bp.route('/step3/', methods=['GET', 'POST'])
+def step3():
+    if request.method == 'POST':
+        session['consultations'] = {
+            'name':    request.form.getlist('consultation_name'),
+            'outcome': request.form.getlist('consultation_outcome'),
+            'source':  request.form.getlist('consultation_source')
+        }
+        return redirect(url_for('daily_report.step4'))
+    return render_template('daily_report/step3.html',
+                           consultations=session.get('consultations', {}),
+                           active_page='daily-report')
+
+@daily_report_bp.route('/step4/', methods=['GET', 'POST'])
+def step4():
+    if request.method == 'POST':
+        session['opportunities'] = {
+            'name':        request.form.getlist('opportunity_opportunity_name'),
+            'provider':    request.form.getlist('opportunity_opportunity_provider'),
+            'description': request.form.getlist('opportunity_opportunity_description')
+        }
+        return redirect(url_for('daily_report.step5'))
+    return render_template('daily_report/step4.html',
+                           opportunities=session.get('opportunities', {}),
+                           active_page='daily-report')
+
+@daily_report_bp.route('/step5/', methods=['GET', 'POST'])
+def step5():
+    # (your existing step5 + offline submission logic here)
+    # ...
+    pass
+
+@daily_report_bp.route('/submit-offline', methods=['POST'])
+def submit_offline():
+    # (your existing offline handler)
+    # ...
+    pass
+
+def build_full_report(attendance_done, no_show):
+    # (your existing builder)
+    # ...
+    pass
+
+def save_daily_report(report):
+    # (your existing save logic)
+    # ...
+    pass
+
+def handle_offline_submission(data):
+    # (your existing offline wrapper)
+    # ...
+    pass
+
+
+# ── NEW WIZARD ROUTE ───────────────────────────────────────────────────────────
+
+@daily_report_bp.route('/daily-report/', methods=['GET', 'POST'])
+def daily_report_wizard():
+    if request.method == 'POST':
+        # offline JSON POST?
+        if request.is_json:
+            return handle_offline_submission(request.get_json())
+        # final submit from our wizard?
+        elif 'full_report_json' in request.form:
+            import json
+            data = json.loads(request.form['full_report_json'])
+            save_daily_report(data)
+            session.clear()
+            return render_template('daily_report/submitted.html',
+                                   active_page='daily-report')
+        else:
+            # shouldn't happen
+            return redirect(url_for('daily_report.daily_report_wizard'))
+    # GET → show combined wizard
+    return render_template('daily_report/combined.html',
+                           active_page='daily-report')
