@@ -1,24 +1,107 @@
 <!doctype html>
 <html lang="en">
-<head> … (same as yours) … </head>
-<body class="…">
-  … navigation …
-  <main> {% block content %}{% endblock %} </main>
+<head>
+  <meta charset="utf-8">
+  <title>Figurella Platform</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Offline notice -->
-  <div id="offline-popup" class="fixed inset-0 hidden …">
-    <div class="bg-white p-6 …">
-      <p></p>
-      <button onclick="this.closest('#offline-popup').classList.add('hidden')">OK</button>
+  <!-- Tailwind CSS -->
+  <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#CC0066">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}" type="image/png">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}">
+
+  <style>
+    .figurella-pink { color: #CC0066; }
+    .bg-figurella   { background-color: #CC0066; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
+
+  <!-- Mobile Header -->
+  <header class="bg-white shadow px-4 py-3 flex justify-between items-center md:hidden">
+    <img src="{{ url_for('static', filename='images/figurella-logo.png') }}" alt="Logo" class="h-8">
+    <button id="menuToggle" class="text-gray-700 focus:outline-none text-xl">☰</button>
+  </header>
+
+  <div class="flex flex-1">
+    <!-- Sidebar (desktop) -->
+    <aside class="hidden md:block w-64 bg-white shadow-lg p-4">
+      <img src="{{ url_for('static', filename='images/figurella-logo.png') }}"
+           alt="Logo" class="mb-6 w-32 mx-auto">
+      <nav class="space-y-3">
+        <a href="{{ url_for('home.index') }}"
+           class="block px-3 py-2 rounded-md hover:bg-gray-100
+                  {% if active_page=='home' %}bg-gray-200 font-semibold{% endif %}">
+          Home
+        </a>
+        <a href="{{ url_for('daily_report.daily_report_wizard') }}"
+           class="block px-3 py-2 rounded-md hover:bg-gray-100
+                  {% if active_page=='daily-report' %}bg-gray-200 font-semibold{% endif %}">
+          Daily Report
+        </a>
+        <a href="{{ url_for('clients.list') }}"
+           class="block px-3 py-2 rounded-md hover:bg-gray-100
+                  {% if active_page=='clients' %}bg-gray-200 font-semibold{% endif %}">
+          Clients
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-4">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="fixed bottom-0 w-full bg-white shadow border-t md:hidden flex justify-around text-sm z-50">
+    <a href="{{ url_for('home.index') }}"
+       class="py-2 px-4 flex-1 text-center
+              {% if active_page=='home' %}text-figurella-pink font-semibold{% endif %}">
+      Home
+    </a>
+    <a href="{{ url_for('daily_report.daily_report_wizard') }}"
+       class="py-2 px-4 flex-1 text-center
+              {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">
+      Daily
+    </a>
+    <a href="{{ url_for('clients.list') }}"
+       class="py-2 px-4 flex-1 text-center
+              {% if active_page=='clients' %}text-figurella-pink font-semibold{% endif %}">
+      Clients
+    </a>
+  </nav>
+
+  <!-- Offline Notice Popup -->
+  <div id="offline-popup"
+       class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg p-6 text-center max-w-sm w-full">
+      <p id="offline-popup-msg" class="text-gray-800 text-lg mb-4"></p>
+      <button onclick="document.getElementById('offline-popup').classList.add('hidden')"
+              class="bg-figurella text-white px-4 py-2 rounded-full">
+        OK
+      </button>
     </div>
   </div>
 
+  <!-- Sidebar Toggle Script -->
   <script>
-    // sidebar toggle…
+    document.addEventListener("DOMContentLoaded", () => {
+      const toggleBtn = document.getElementById('menuToggle');
+      toggleBtn?.addEventListener('click', () =>
+        document.querySelector('aside')?.classList.toggle('hidden')
+      );
+    });
   </script>
 
+  <!-- PWA & Offline Queue -->
   <script src="{{ url_for('static', filename='js/sw-init.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
-
+  <script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
 </body>
 </html>
