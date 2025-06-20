@@ -9,6 +9,7 @@
   <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
 
   <!-- PWA Manifest & Icons -->
+  <!-- Note: manifest.json lives at static/manifest.json, not static/static/... -->
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#CC0066">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,7 +40,8 @@
                   {% if active_page=='home' %}bg-gray-200 font-semibold{% endif %}">
           Home
         </a>
-        <a href="{{ url_for('daily_report.step1') }}"
+        <!-- UPDATED: now points to the combined wizard -->
+        <a href="{{ url_for('daily_report.combined_report_wizard') }}"
            class="block px-3 py-2 rounded-md hover:bg-gray-100
                   {% if active_page=='daily-report' %}bg-gray-200 font-semibold{% endif %}">
           Daily Report
@@ -65,7 +67,8 @@
               {% if active_page=='home' %}text-figurella-pink font-semibold{% endif %}">
       Home
     </a>
-    <a href="{{ url_for('daily_report.step1') }}"
+    <!-- UPDATED: mobile link to combined wizard -->
+    <a href="{{ url_for('daily_report.combined_report_wizard') }}"
        class="py-2 px-4 flex-1 text-center
               {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">
       Daily

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Report Wizard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <script src="{{ url_for('static', filename='js/combined.js') }}" defer></script>
+</head>
+<body>
+  {% extends 'base.html' %}
+  {% block content %}
+  <form id="wizard-form" method="POST" action="{{ url_for('step5.submit') }}">
+    <!-- hidden input to carry full JSON payload -->
+    <input type="hidden" name="full_report_json" id="full_report_json" />
+
+    <!-- Step 1: Sales -->
+    <section class="wizard-step" data-step="1">
+      <h2>Step 1: Sales</h2>
+      <!-- your sales inputs here, e.g.: -->
+      <label>Packages sold: <input name="sales_packages" type="number" /></label>
+      <label>Revenue:      <input name="sales_revenue"  type="number" step="0.01" /></label>
+      <div class="wizard-nav">
+        <button type="button" class="next-button">Next</button>
+      </div>
+    </section>
+
+    <!-- Step 2: Leads -->
+    <section class="wizard-step hidden" data-step="2">
+      <h2>Step 2: Leads</h2>
+      <!-- leads inputs -->
+      <label>Leads Scheduled: <input name="leads_count" type="number" /></label>
+      <label>Lead Source:     <input name="leads_source" type="text" /></label>
+      <div class="wizard-nav">
+        <button type="button" class="back-button">Back</button>
+        <button type="button" class="next-button">Next</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Consultations -->
+    <section class="wizard-step hidden" data-step="3">
+      <h2>Step 3: Consultations</h2>
+      <!-- consultation inputs -->
+      <label>Consultations Held: <input name="consultations_count" type="number" /></label>
+      <label>Outcome:             <input name="consultations_outcome" type="text" /></label>
+      <div class="wizard-nav">
+        <button type="button" class="back-button">Back</button>
+        <button type="button" class="next-button">Next</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Opportunities -->
+    <section class="wizard-step hidden" data-step="4">
+      <h2>Step 4: Opportunities</h2>
+      <!-- opportunities inputs -->
+      <label>Opportunities: <textarea name="opp_details"></textarea></label>
+      <div class="wizard-nav">
+        <button type="button" class="back-button">Back</button>
+        <button type="button" class="next-button">Next</button>
+      </div>
+    </section>
+
+    <!-- Step 5: Attendance & Review -->
+    <section class="wizard-step hidden" data-step="5">
+      <h2>Step 5: Attendance & Review</h2>
+      <!-- attendance inputs -->
+      <label>Attended: <input name="attendance_attended" type="number" /></label>
+      <label>No-Shows: <input name="attendance_noshow"   type="number" /></label>
+      <!-- optional: render a summary review of collected data here -->
+      <div class="wizard-nav">
+        <button type="button" class="back-button">Back</button>
+        <button type="submit" class="finish-button">Submit</button>
+      </div>
+    </section>
+  </form>
+  {% endblock %}
+
+  <style>
+    .hidden { display: none; }
+    .wizard-step { margin: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+    .wizard-nav { margin-top: 1rem; }
+    .wizard-nav button { margin-right: 0.5rem; }
+  </style>
+</body>
+</html>
