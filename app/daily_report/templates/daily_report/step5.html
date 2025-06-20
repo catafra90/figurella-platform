@@ -42,30 +42,30 @@ function handleOfflineFinalSubmit(event) {
   const attendance_done = form.attendance_done.value.trim();
   const no_show = form.no_show.value.trim();
 
-  const step1 = JSON.parse(sessionStorage.getItem("step1") || "null");
-  const step2 = JSON.parse(sessionStorage.getItem("step2Data") || "null");
-  const step3 = JSON.parse(sessionStorage.getItem("step3Data") || "null");
-  const step4 = JSON.parse(sessionStorage.getItem("step4Data") || "null");
+  const step1 = JSON.parse(sessionStorage.getItem("step1") || "{}");
+  const step2 = JSON.parse(sessionStorage.getItem("step2Data") || "{}");
+  const step3 = JSON.parse(sessionStorage.getItem("step3Data") || "{}");
+  const step4 = JSON.parse(sessionStorage.getItem("step4Data") || "{}");
 
-  const fullReport = {
+  const report = {
     sales: step1,
     leads: step2,
     consultations: step3,
     opportunities: step4,
-    attendance: { attendance_done, no_show }
+    attendance_done,
+    no_show
   };
 
   if (!navigator.onLine) {
-    const queue = JSON.parse(localStorage.getItem("reportQueue") || "[]");
-    queue.push(fullReport);
-    localStorage.setItem("reportQueue", JSON.stringify(queue));
+    queueSubmission(report);
     form.reset();
-    showPopup("💾 Report saved offline. Will auto-submit when online.");
+    sessionStorage.clear();
+    showPopup("💾 Report saved offline. Will auto-submit when back online.");
   } else {
     const hiddenInput = document.createElement("input");
     hiddenInput.type = "hidden";
     hiddenInput.name = "full_report_json";
-    hiddenInput.value = JSON.stringify(fullReport);
+    hiddenInput.value = JSON.stringify(report);
     form.appendChild(hiddenInput);
     form.submit();
   }

@@ -57,6 +57,14 @@
     <a href="/clients" class="py-2 px-4 flex-1 text-center {% if request.path.startswith('/clients') %}text-pink-600 font-semibold{% endif %}">Clients</a>
   </nav>
 
+  <!-- Offline Popup -->
+  <div id="offline-popup" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm mx-auto">
+      <p class="text-gray-800 text-lg mb-4">💾 Report saved offline. Will auto-submit when back online.</p>
+      <button onclick="document.getElementById('offline-popup').classList.add('hidden')" class="bg-figurella text-white px-4 py-2 rounded-full">OK</button>
+    </div>
+  </div>
+
   <!-- Sidebar Toggle -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -67,7 +75,7 @@
     });
   </script>
 
-  <!-- ✅ Load service worker once -->
+  <!-- Service Worker & Queue Sync -->
   <script src="{{ url_for('static', filename='js/sw-init.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
 </body>

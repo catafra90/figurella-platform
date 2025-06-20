@@ -4,7 +4,7 @@
 <div class="mt-4 space-y-6">
   <h2 class="text-2xl font-bold figurella-pink">Opportunities</h2>
 
-  <form id="opportunityForm" method="POST" onsubmit="saveOpportunitiesToSession()" class="space-y-4">
+  <form id="opportunityForm" method="POST" onsubmit="saveStep4ToStorage()" class="space-y-4">
     <div id="opportunity-container" class="space-y-6">
       <!-- Opportunity blocks injected here -->
     </div>
@@ -24,39 +24,47 @@
   </form>
 </div>
 
-<!-- Template Generator -->
 <script>
+// Template Generator
 function createOpportunityBlock(name = "", provider = "", description = "") {
   const block = document.createElement("div");
   block.className = "bg-white rounded-xl shadow p-4 space-y-3";
   block.innerHTML = `
     <div>
       <label class="block text-sm font-semibold text-gray-700">Opportunity Name</label>
-      <textarea name="opportunity_opportunity_name" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${name}</textarea>
+      <textarea name="opportunity_name" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${name}</textarea>
     </div>
     <div>
       <label class="block text-sm font-semibold text-gray-700">Opportunity Provider</label>
-      <textarea name="opportunity_opportunity_provider" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${provider}</textarea>
+      <textarea name="opportunity_provider" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${provider}</textarea>
     </div>
     <div>
       <label class="block text-sm font-semibold text-gray-700">Opportunity Description</label>
-      <textarea name="opportunity_opportunity_description" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${description}</textarea>
+      <textarea name="opportunity_description" rows="1" class="w-full border border-gray-300 rounded-md px-3 py-2">${description}</textarea>
     </div>
   `;
   return block;
 }
-</script>
 
-<!-- Load from sessionStorage -->
-<script>
+// Load from sessionStorage
 window.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("opportunity-container");
-  const saved = JSON.parse(sessionStorage.getItem("step4Data") || "null");
 
-  if (saved && saved.name?.length) {
-    for (let i = 0; i < saved.name.length; i++) {
+  let saved = null;
+  try {
+    saved = JSON.parse(sessionStorage.getItem("step4"));
+  } catch (e) {
+    console.warn("⚠️ Invalid session data for step4:", e);
+  }
+
+  if (saved && saved.opportunity_name?.length) {
+    for (let i = 0; i < saved.opportunity_name.length; i++) {
       container.appendChild(
-        createOpportunityBlock(saved.name[i], saved.provider[i], saved.description[i])
+        createOpportunityBlock(
+          saved.opportunity_name[i],
+          saved.opportunity_provider[i],
+          saved.opportunity_description[i]
+        )
       );
     }
   } else {
@@ -65,25 +73,21 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-</script>
 
-<!-- Add Row Button -->
-<script>
+// Add Row Button
 document.getElementById("add-opportunity").addEventListener("click", () => {
   document.getElementById("opportunity-container").appendChild(createOpportunityBlock());
 });
-</script>
 
-<!-- Save to sessionStorage -->
-<script>
-function saveOpportunitiesToSession() {
+// Save to sessionStorage
+function saveStep4ToStorage() {
   const form = document.getElementById("opportunityForm");
   const data = {
-    name: [...form.querySelectorAll('[name="opportunity_opportunity_name"]')].map(el => el.value),
-    provider: [...form.querySelectorAll('[name="opportunity_opportunity_provider"]')].map(el => el.value),
-    description: [...form.querySelectorAll('[name="opportunity_opportunity_description"]')].map(el => el.value),
+    opportunity_name: [...form.querySelectorAll('[name="opportunity_name"]')].map(el => el.value),
+    opportunity_provider: [...form.querySelectorAll('[name="opportunity_provider"]')].map(el => el.value),
+    opportunity_description: [...form.querySelectorAll('[name="opportunity_description"]')].map(el => el.value),
   };
-  sessionStorage.setItem("step4Data", JSON.stringify(data));
+  sessionStorage.setItem("step4", JSON.stringify(data));
 }
 </script>
 {% endblock %}

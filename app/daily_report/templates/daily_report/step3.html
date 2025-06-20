@@ -4,7 +4,7 @@
 <div class="mt-4 space-y-6">
   <h2 class="text-2xl font-bold figurella-pink">Consultations</h2>
 
-  <form id="consultationForm" method="POST" onsubmit="saveConsultationsToSession()" class="space-y-4">
+  <form id="consultationForm" method="POST" onsubmit="saveStep3ToStorage()" class="space-y-4">
     <div id="consultation-container" class="space-y-6">
       <!-- Consultation blocks inserted dynamically -->
     </div>
@@ -24,8 +24,8 @@
   </form>
 </div>
 
-<!-- Template Builder -->
 <script>
+// Template Builder
 function createConsultationBlock(name = "", outcome = "", source = "") {
   const block = document.createElement("div");
   block.className = "bg-white rounded-xl shadow p-4 space-y-3";
@@ -45,17 +45,25 @@ function createConsultationBlock(name = "", outcome = "", source = "") {
   `;
   return block;
 }
-</script>
 
-<!-- Load from sessionStorage -->
-<script>
+// Load from sessionStorage
 window.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("consultation-container");
-  const saved = JSON.parse(sessionStorage.getItem("step3Data") || "null");
 
-  if (saved && saved.name?.length) {
-    for (let i = 0; i < saved.name.length; i++) {
-      container.appendChild(createConsultationBlock(saved.name[i], saved.outcome[i], saved.source[i]));
+  let saved = null;
+  try {
+    saved = JSON.parse(sessionStorage.getItem("step3"));
+  } catch (e) {
+    console.warn("⚠️ Invalid session data for step3:", e);
+  }
+
+  if (saved && saved.consultation_name?.length) {
+    for (let i = 0; i < saved.consultation_name.length; i++) {
+      container.appendChild(createConsultationBlock(
+        saved.consultation_name[i],
+        saved.consultation_outcome[i],
+        saved.consultation_source[i]
+      ));
     }
   } else {
     for (let i = 0; i < 3; i++) {
@@ -63,25 +71,21 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-</script>
 
-<!-- Add Consultation Row -->
-<script>
+// Add Consultation Row
 document.getElementById("add-consultation").addEventListener("click", () => {
   document.getElementById("consultation-container").appendChild(createConsultationBlock());
 });
-</script>
 
-<!-- Save Form to sessionStorage -->
-<script>
-function saveConsultationsToSession() {
+// Save to sessionStorage
+function saveStep3ToStorage() {
   const form = document.getElementById("consultationForm");
   const data = {
-    name: Array.from(form.querySelectorAll('[name="consultation_name"]')).map(el => el.value),
-    outcome: Array.from(form.querySelectorAll('[name="consultation_outcome"]')).map(el => el.value),
-    source: Array.from(form.querySelectorAll('[name="consultation_source"]')).map(el => el.value),
+    consultation_name: Array.from(form.querySelectorAll('[name="consultation_name"]')).map(el => el.value),
+    consultation_outcome: Array.from(form.querySelectorAll('[name="consultation_outcome"]')).map(el => el.value),
+    consultation_source: Array.from(form.querySelectorAll('[name="consultation_source"]')).map(el => el.value)
   };
-  sessionStorage.setItem("step3Data", JSON.stringify(data));
+  sessionStorage.setItem("step3", JSON.stringify(data));
 }
 </script>
 {% endblock %}
