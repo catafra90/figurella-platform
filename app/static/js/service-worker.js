@@ -1,62 +1,91 @@
-const CACHE_NAME = "figurella-cache-v1";
-const OFFLINE_URL = "/offline";
+// app/static/js/service-worker.js
 
-const ASSETS = [
-  "/", "/step1/", "/step2/", "/step3/", "/step4/", "/step5/",
-  "/static/css/tailwind.min.css",
-  "/static/js/queue.js",
-  "/static/js/sw-init.js",
-  "/static/images/figurella-logo.png",
-  "/static/manifest.json",
-  OFFLINE_URL
+const CACHE_NAME = 'figurella-cache-v18';
+const OFFLINE_URL = '/offline';
+
+// Everything we want pre-cached on install:
+const urlsToPreCache = [
+  '/',
+  '/clients',
+  '/step1/',
+  '/step2/',
+  '/step3/',
+  '/step4/',
+  '/step5/',
+  '/offline',
+
+  '/static/css/tailwind.min.css',
+  '/static/js/sw-init.js',
+  '/static/js/queue.js',
+  '/static/images/figurella-logo.png',
+  '/static/manifest.json'
 ];
 
-self.addEventListener("install", evt => {
-  evt.waitUntil(
+// INSTALL: cache our core assets
+self.addEventListener('install', event => {
+  event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache =>
+        Promise.all(
+          urlsToPreCache.map(async url => {
+            try {
+              const response = await fetch(url, { cache: 'no-store' });
+              if (response.ok) {
+                await cache.put(url, response.clone());
+                console.log('✅ Cached', url);
+              } else {
+                console.warn('⚠️ Failed to cache', url, response.status);
+              }
+            } catch (err) {
+              console.warn('⚠️ Error fetching', url, err);
+            }
+          })
+        )
+      )
   );
   self.skipWaiting();
 });
 
-self.addEventListener("activate", evt => {
-  evt.waitUntil(self.clients.claim());
+// ACTIVATE: clear out any old caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            console.log('🧹 Deleting old cache', key);
+            return caches.delete(key);
+          }
+        })
+      )
+    )
+  );
+  self.clients.claim();
 });
 
-self.addEventListener("fetch", evt => {
-  // Only handle GETs
-  if (evt.request.method !== "GET") return;
+// FETCH: serve from cache, then network, then offline fallback
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
 
-  // HTML pages: try network first, fallback to cache, then offline page
-  if (evt.request.mode === "navigate") {
-    evt.respondWith(
-      fetch(evt.request)
-        .then(res => {
-          // update cache in background
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(evt.request, copy));
-          return res;
+  event.respondWith(
+    caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request)
+        .then(networkResponse => {
+          // Put a copy in the cache for next time
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return networkResponse;
         })
-        .catch(() =>
-          caches.match(evt.request).then(cached => cached || caches.match(OFFLINE_URL))
-        )
-    );
-    return;
-  }
-
-  // Other requests (CSS/JS/images): cache-first, then network
-  evt.respondWith(
-    caches.match(evt.request).then(cached => {
-      return cached || fetch(evt.request).then(res => {
-        if (res && res.status === 200 && res.type === "basic") {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(evt.request, copy));
-        }
-        return res;
-      });
-    }).catch(() => {
-      // if both fail, and it’s an image, you could return a fallback image here
-      return null;
+        .catch(() => {
+          // If both cache & network fail, show offline page
+          return caches.match(OFFLINE_URL);
+        });
     })
   );
 });
