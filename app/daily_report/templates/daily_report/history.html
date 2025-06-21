@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto py-6">
+  <h2 class="text-2xl font-bold mb-4 text-center">Daily Report History</h2>
+  {% if not entries %}
+    <p class="text-center text-gray-500">No history available yet.</p>
+  {% else %}
+    <ul class="space-y-4">
+      {% for e in entries %}
+        <li class="bg-white p-4 rounded-xl shadow flex justify-between items-center">
+          <div>
+            <div class="text-sm text-gray-500">{{ e.Date }} • {{ e.section }}</div>
+            <div class="mt-1 text-gray-800">
+              {% for k, v in e.items() if k not in ['Date','section'] %}
+                <span class="block"><strong>{{ k|capitalize }}:</strong> {{ v }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="text-gray-300">›</div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}
