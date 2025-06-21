@@ -12,7 +12,6 @@ daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates
 
 def save_daily_report(report):
     current_app.logger.info(f"[save_daily_report] payload received: {report}")
-
     data_dir = os.path.join(current_app.root_path, '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
     file_path = os.path.join(data_dir, 'reports.xlsx')
@@ -23,22 +22,23 @@ def save_daily_report(report):
             df.insert(0, 'Date', date)
         return df
 
-    # Initialize workbook
+    # Initialize workbook if missing
     if not os.path.exists(file_path):
         with pd.ExcelWriter(file_path, engine="openpyxl") as w:
-            pd.DataFrame(columns=["Date","client_name","package","revenue"])\
+            pd.DataFrame(columns=["Date","client_name","package","revenue"]) \
               .to_excel(w, sheet_name="Sales", index=False)
-            pd.DataFrame(columns=["Date","name","date","source"])\
+            pd.DataFrame(columns=["Date","name","date","source"]) \
               .to_excel(w, sheet_name="Leads", index=False)
-            pd.DataFrame(columns=["Date","name","outcome","source"])\
+            pd.DataFrame(columns=["Date","name","outcome","source"]) \
               .to_excel(w, sheet_name="Consultations", index=False)
-            pd.DataFrame(columns=["Date","name","provider","description"])\
+            pd.DataFrame(columns=["Date","name","provider","description"]) \
               .to_excel(w, sheet_name="Opportunities", index=False)
-            pd.DataFrame(columns=["Date","attendance_done","no_show"])\
+            pd.DataFrame(columns=["Date","attendance_done","no_show"]) \
               .to_excel(w, sheet_name="Attendance", index=False)
 
-    # Append to each sheet
-    with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as w:
+    # Append data
+    with pd.ExcelWriter(file_path, engine="openpyxl",
+                        mode="a", if_sheet_exists="overlay") as w:
         sheets = w.book.sheetnames
         sections = {
             "sales":        ["client_name","package","revenue"],
@@ -50,34 +50,33 @@ def save_daily_report(report):
             df = pd.DataFrame(report.get(key, {}))
             if df.empty: continue
             df = add_date_column(df)
-            mask = df[cols].astype(str)\
+            mask = df[cols].astype(str) \
                      .apply(lambda r: ''.join(r).strip(), axis=1) != ''
             df = df[mask]
             sheet = key.capitalize()
             if sheet in sheets and not df.empty:
                 start = w.sheets[sheet].max_row
-                df.to_excel(w, sheet_name=sheet, index=False,
-                            header=False, startrow=start)
+                df.to_excel(w, sheet_name=sheet,
+                            index=False, header=False, startrow=start)
 
         # Attendance
         att = report.get("attendance", {})
         att_df = pd.DataFrame([att])
         att_df.insert(0, 'Date', date)
-        if not att_df.drop(columns="Date")\
-                     .replace('', None)\
+        if not att_df.drop(columns="Date") \
+                     .replace('', None) \
                      .dropna(how='all').empty:
             start = w.sheets["Attendance"].max_row
             att_df.to_excel(w, sheet_name="Attendance",
                             index=False, header=False, startrow=start)
 
-    # optional webhook
+    # Optional webhook
     webhook = os.getenv("GCHAT_WEBHOOK_URL")
     if webhook:
         try:
             requests.post(webhook, json={"text": f"✅ New report: {date}"})
         except Exception as ex:
             current_app.logger.warning("GChat failed: %s", ex)
-
 
 def handle_offline_submission(data):
     try:
@@ -113,12 +112,12 @@ def history():
     entries = []
 
     if os.path.exists(file_path):
-        # read all sheets
+        # Read and combine every sheet
         all_sheets = pd.read_excel(file_path, sheet_name=None)
         for section, df in all_sheets.items():
             for row in df.to_dict('records'):
                 entries.append({"section": section, **row})
-        # newest first
+        # Sort newest first
         entries.sort(key=lambda x: x.get("Date"), reverse=True)
 
     return render_template('daily_report/history.html',
