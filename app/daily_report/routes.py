@@ -26,6 +26,9 @@ def build_full_report(attendance_done, no_show):
 
 
 def save_daily_report(report):
+    # Log incoming payload for debugging
+    current_app.logger.info(f"[save_daily_report] payload received: {report}")
+
     data_dir = os.path.join(current_app.root_path, '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
     file_path = os.path.join(data_dir, 'reports.xlsx')
