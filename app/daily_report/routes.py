@@ -11,105 +11,95 @@ import json
 # Blueprint setup
 daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates')
 
-# Step 1: Sales
-@daily_report_bp.route('/step1/', methods=['GET', 'POST'])
-def step1():
-    if request.method == 'POST':
-        session['sales'] = {
-            'client_name': request.form.getlist('client_name'),
-            'package':     request.form.getlist('package'),
-            'revenue':     request.form.getlist('revenue')
+# ── Helpers ─────────────────────────────────────────────────────────────────────
+def build_full_report(attendance_done, no_show):
+    return {
+        "sales":         session.get("sales", {}),
+        "leads":         session.get("leads", {}),
+        "consultations": session.get("consultations", {}),
+        "opportunities": session.get("opportunities", {}),
+        "attendance": {
+            "attendance_done": attendance_done,
+            "no_show":         no_show
         }
-        return redirect(url_for('daily_report.step2'))
-    return render_template('daily_report/step1.html',
-                           sales=session.get('sales', {}),
-                           active_page='daily-report')
+    }
 
-# Step 2: Leads
-@daily_report_bp.route('/step2/', methods=['GET', 'POST'])
-def step2():
-    if request.method == 'POST':
-        session['leads'] = {
-            'name':   request.form.getlist('lead_name'),
-            'date':   request.form.getlist('lead_date'),
-            'source': request.form.getlist('lead_source')
+
+def save_daily_report(report):
+    data_dir = os.path.join(current_app.root_path, '..', 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    file_path = os.path.join(data_dir, 'reports.xlsx')
+    date = datetime.now().strftime("%Y-%m-%d")
+
+    def add_date_column(df):
+        if not df.empty:
+            df.insert(0, 'Date', date)
+        return df
+
+    # Initialize file with proper sheets
+    if not os.path.exists(file_path):
+        with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+            pd.DataFrame(columns=["Date","client_name","package","revenue"]).to_excel(writer, sheet_name="Sales", index=False)
+            pd.DataFrame(columns=["Date","name","date","source"]).to_excel(writer, sheet_name="Leads", index=False)
+            pd.DataFrame(columns=["Date","name","outcome","source"]).to_excel(writer, sheet_name="Consultations", index=False)
+            pd.DataFrame(columns=["Date","name","provider","description"]).to_excel(writer, sheet_name="Opportunities", index=False)
+            pd.DataFrame(columns=["Date","attendance_done","no_show"]).to_excel(writer, sheet_name="Attendance", index=False)
+
+    # Append data to each sheet
+    with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+        sheets = writer.book.sheetnames
+        sections = {
+            "sales":        ["client_name","package","revenue"],
+            "leads":        ["name","date","source"],
+            "consultations": ["name","outcome","source"],
+            "opportunities": ["name","provider","description"]
         }
-        return redirect(url_for('daily_report.step3'))
-    return render_template('daily_report/step2.html',
-                           leads=session.get('leads', {}),
-                           active_page='daily-report')
+        for key, cols in sections.items():
+            df = pd.DataFrame(report.get(key, {}))
+            if df.empty:
+                continue
+            df = add_date_column(df)
+            mask = df[cols].astype(str).apply(lambda row: ''.join(row).strip(), axis=1) != ''
+            df = df[mask]
+            sheet = key.capitalize()
+            if sheet in sheets and not df.empty:
+                start = writer.sheets[sheet].max_row
+                df.to_excel(writer, sheet_name=sheet, index=False, header=False, startrow=start)
+        # Attendance sheet
+        att = report.get("attendance", {})
+        att_df = pd.DataFrame([att])
+        att_df.insert(0, 'Date', date)
+        if not att_df.drop(columns="Date").replace('', None).dropna(how='all').empty:
+            start = writer.sheets["Attendance"].max_row
+            att_df.to_excel(writer, sheet_name="Attendance", index=False, header=False, startrow=start)
 
-# Step 3: Consultations
-@daily_report_bp.route('/step3/', methods=['GET', 'POST'])
-def step3():
-    if request.method == 'POST':
-        session['consultations'] = {
-            'name':    request.form.getlist('consultation_name'),
-            'outcome': request.form.getlist('consultation_outcome'),
-            'source':  request.form.getlist('consultation_source')
-        }
-        return redirect(url_for('daily_report.step4'))
-    return render_template('daily_report/step3.html',
-                           consultations=session.get('consultations', {}),
-                           active_page='daily-report')
+    # Optional: Google Chat webhook
+    webhook = os.getenv("GCHAT_WEBHOOK_URL")
+    if webhook:
+        try:
+            requests.post(webhook, json={"text": f"✅ New report submitted: {date}"})
+        except Exception as e:
+            current_app.logger.warning("GChat webhook failed: %s", e)
 
-# Step 4: Opportunities
-@daily_report_bp.route('/step4/', methods=['GET', 'POST'])
-def step4():
-    if request.method == 'POST':
-        session['opportunities'] = {
-            'name':        request.form.getlist('opportunity_opportunity_name'),
-            'provider':    request.form.getlist('opportunity_opportunity_provider'),
-            'description': request.form.getlist('opportunity_opportunity_description')
-        }
-        return redirect(url_for('daily_report.step5'))
-    return render_template('daily_report/step4.html',
-                           opportunities=session.get('opportunities', {}),
-                           active_page='daily-report')
 
-# Step 5: Submit & Review
-@daily_report_bp.route('/step5/', methods=['GET', 'POST'])
-def step5():
+def handle_offline_submission(data):
+    try:
+        save_daily_report(data)
+        return jsonify({"message": "Offline report saved"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ── Routes ───────────────────────────────────────────────────────────────────────
+@daily_report_bp.route('/daily-report/', endpoint='combined_report_wizard', methods=['GET', 'POST'])
+def combined_report_wizard():
     if request.method == 'POST':
-        # Offline JSON submission
         if request.is_json:
             return handle_offline_submission(request.get_json())
-        # Final wizard submission
-        if 'full_report_json' in request.form:
-            report = json.loads(request.form['full_report_json'])
-        else:
-            attendance_done = request.form.get('attendance_done', '')
-            no_show         = request.form.get('no_show', '')
-            report = build_full_report(attendance_done, no_show)
-
+        # Parse full JSON from form
+        report = json.loads(request.form.get('full_report_json', '{}'))
         save_daily_report(report)
         session.clear()
-        return render_template('daily_report/submitted.html',
-                               active_page='daily-report')
+        return render_template('daily_report/submitted.html', active_page='daily-report')
 
-    return render_template('daily_report/step5.html', active_page='daily-report')
-
-# Offline queue handler
-@daily_report_bp.route('/submit-offline', methods=['POST'])
-def submit_offline():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No data received"}), 400
-    return handle_offline_submission(data)
-
-# Helpers omitted for brevity...
-
-# ── Combined Wizard Route ───────────────────────────────────────────────────────
-@daily_report_bp.route('/daily-report/', endpoint='combined_report_wizard', methods=['GET', 'POST'])
-def daily_report_wizard():
-    if request.method == 'POST':
-        if request.is_json:
-            return handle_offline_submission(request.get_json())
-        if 'full_report_json' in request.form:
-            data = json.loads(request.form['full_report_json'])
-            save_daily_report(data)
-            session.clear()
-            return render_template('daily_report/submitted.html', active_page='daily-report')
-        return redirect(url_for('daily_report.combined_report_wizard'))
-
+    # GET: serve the combined single-page form
     return render_template('daily_report/combined.html', active_page='daily-report')
