@@ -93,13 +93,23 @@ def handle_offline_submission(data):
 @daily_report_bp.route('/daily-report/', endpoint='combined_report_wizard', methods=['GET', 'POST'])
 def combined_report_wizard():
     if request.method == 'POST':
-        if request.is_json:
-            return handle_offline_submission(request.get_json())
-        # Parse full JSON from form
-        report = json.loads(request.form.get('full_report_json', '{}'))
-        save_daily_report(report)
-        session.clear()
-        return render_template('daily_report/submitted.html', active_page='daily-report')
+        try:
+            if request.is_json:
+                return handle_offline_submission(request.get_json())
+
+            # Parse full JSON from form
+            report = json.loads(request.form.get('full_report_json', '{}'))
+            save_daily_report(report)
+            session.clear()
+            return render_template('daily_report/submitted.html', active_page='daily-report')
+
+        except Exception as e:
+            current_app.logger.exception("Error saving daily report")
+            return render_template(
+                'daily_report/combined.html',
+                active_page='daily-report',
+                error_message=str(e)
+            ), 500
 
     # GET: serve the combined single-page form
     return render_template('daily_report/combined.html', active_page='daily-report')
