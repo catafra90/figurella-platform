@@ -1,15 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-  <!-- add a header bar with title + history link -->
-  <div class="max-w-4xl mx-auto py-8 flex items-center justify-between">
-    <h1 class="text-3xl font-bold text-figurella-pink">Daily Report</h1>
-    <a href="{{ url_for('daily_report.history') }}"
-       class="flex items-center space-x-1 text-figurella-pink hover:text-figurella-pink-dark">
-      <img src="{{ url_for('static', filename='images/history-icon.svg') }}"
-           alt="History" class="h-6 w-6"/>
-      <span class="underline font-medium">History</span>
-    </a>
-  </div>
 
   <form id="daily-report-form"
         method="POST"
