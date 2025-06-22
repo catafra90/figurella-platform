@@ -1,10 +1,10 @@
-// combined.js: dynamic Add buttons + offline‐first JSON POST
+// combined.js: dynamic Add buttons + JSON POST only when online
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('daily-report-form');
   if (!form) return;
 
-  // 1) Handle “+ Add” buttons (unchanged)
+  // Handle “+ Add” buttons
   document.querySelectorAll('[data-add-button]').forEach(btn => {
     btn.addEventListener('click', () => {
       const category = btn.getAttribute('data-add-button');
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 2) On submit, gather into a JS object
+  // On submit, gather data into object
   form.addEventListener('submit', e => {
     e.preventDefault();
 
@@ -43,26 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     data.attendance.attendance_done = form.querySelector('[name="attendance_done"]').value.trim();
     data.attendance.no_show         = form.querySelector('[name="attendance_noshow"]').value.trim();
 
-    // If offline, queue it:
-    if (!navigator.onLine) {
-      fetch('/submit-offline', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      .then(r => r.json())
-      .then(json => {
-        document.getElementById('offline-popup-msg').textContent = json.message || 'Saved offline!';
-        document.getElementById('offline-popup').classList.remove('hidden');
-      })
-      .catch(() => {
-        document.getElementById('offline-popup-msg').textContent = 'Failed to queue offline.';
-        document.getElementById('offline-popup').classList.remove('hidden');
-      });
-      return;  // stop here
-    }
-
-    // If online, inject JSON and allow normal form submit
+    // Submit online only
     const hidden = document.createElement('input');
     hidden.type = 'hidden';
     hidden.name = 'full_report_json';

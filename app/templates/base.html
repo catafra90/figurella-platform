@@ -8,10 +8,8 @@
   <!-- Tailwind CSS -->
   <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
 
-  <!-- PWA Manifest & Icons -->
-  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <!-- Branding -->
   <meta name="theme-color" content="#CC0066">
-  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}" type="image/png">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}">
 
@@ -29,30 +27,18 @@
   </header>
 
   <div class="flex flex-1">
-    <!-- Sidebar (desktop) -->
+    <!-- Sidebar -->
     <aside class="hidden md:block w-64 bg-white shadow-lg p-4">
       <img src="{{ url_for('static', filename='images/figurella-logo.png') }}"
            alt="Logo" class="mb-6 w-32 mx-auto">
       <nav class="space-y-3">
-        <a href="{{ url_for('home.index') }}"
-           class="block px-3 py-2 rounded-md hover:bg-gray-100
-                  {% if active_page=='home' %}bg-gray-200 font-semibold{% endif %}">
-          Home
-        </a>
-        <a href="{{ url_for('daily_report.combined_report_wizard') }}"
-           class="block px-3 py-2 rounded-md hover:bg-gray-100
-                  {% if active_page=='daily-report' %}bg-gray-200 font-semibold{% endif %}">
-          Daily Report
-        </a>
-        <a href="{{ url_for('clients.clients') }}"
-           class="block px-3 py-2 rounded-md hover:bg-gray-100
-                  {% if active_page=='clients' %}bg-gray-200 font-semibold{% endif %}">
-          Clients
-        </a>
+        <a href="{{ url_for('home.index') }}" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='home' %}bg-gray-200 font-semibold{% endif %}">Home</a>
+        <a href="{{ url_for('daily_report.combined_report_wizard') }}" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='daily-report' %}bg-gray-200 font-semibold{% endif %}">Daily Report</a>
+        <a href="{{ url_for('clients.clients') }}" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='clients' %}bg-gray-200 font-semibold{% endif %}">Clients</a>
       </nav>
     </aside>
 
-    <!-- Main content -->
+    <!-- Main Content -->
     <main class="flex-1 p-4">
       {% block content %}{% endblock %}
     </main>
@@ -60,34 +46,10 @@
 
   <!-- Mobile Bottom Nav -->
   <nav class="fixed bottom-0 w-full bg-white shadow border-t md:hidden flex justify-around text-sm z-50">
-    <a href="{{ url_for('home.index') }}"
-       class="py-2 px-4 flex-1 text-center
-              {% if active_page=='home' %}text-figurella-pink font-semibold{% endif %}">
-      Home
-    </a>
-    <a href="{{ url_for('daily_report.combined_report_wizard') }}"
-       class="py-2 px-4 flex-1 text-center
-              {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">
-      Daily
-    </a>
-    <a href="{{ url_for('clients.clients') }}"
-       class="py-2 px-4 flex-1 text-center
-              {% if active_page=='clients' %}text-figurella-pink font-semibold{% endif %}">
-      Clients
-    </a>
+    <a href="{{ url_for('home.index') }}" class="py-2 px-4 flex-1 text-center {% if active_page=='home' %}text-figurella-pink font-semibold{% endif %}">Home</a>
+    <a href="{{ url_for('daily_report.combined_report_wizard') }}" class="py-2 px-4 flex-1 text-center {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">Daily</a>
+    <a href="{{ url_for('clients.clients') }}" class="py-2 px-4 flex-1 text-center {% if active_page=='clients' %}text-figurella-pink font-semibold{% endif %}">Clients</a>
   </nav>
-
-  <!-- Offline Notice Popup -->
-  <div id="offline-popup"
-       class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg p-6 text-center max-w-sm w-full">
-      <p id="offline-popup-msg" class="text-gray-800 text-lg mb-4"></p>
-      <button onclick="document.getElementById('offline-popup').classList.add('hidden')"
-              class="bg-figurella text-white px-4 py-2 rounded-full">
-        OK
-      </button>
-    </div>
-  </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -98,8 +60,6 @@
     });
   </script>
 
-  <script src="{{ url_for('static', filename='js/sw-init.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/combined.js') }}" defer></script>
 </body>
 </html>
