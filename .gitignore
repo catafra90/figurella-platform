@@ -7,3 +7,6 @@ __pycache__/
 
 # Data folder (Excel reports, etc.)
 data/
+
+# Ignore Excel temporary lockfiles
+~$*.xlsx
