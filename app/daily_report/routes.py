@@ -79,17 +79,17 @@ def combined_report_wizard():
         return render_template('daily_report/submitted.html', active_page='daily-report')
     return render_template('daily_report/combined.html', active_page='daily-report')
 
-@daily_report_bp.route('/daily-report/history/', endpoint='history')
-def history():
-    file_path = os.path.join(current_app.static_folder, 'reports', 'reports.xlsx')
-    entries = []
-    if os.path.exists(file_path):
-        all_sheets = pd.read_excel(file_path, sheet_name=None)
-        for section, df in all_sheets.items():
-            for row in df.to_dict('records'):
-                entries.append({"section": section, **row})
-        entries.sort(key=lambda x: x.get("Date"), reverse=True)
-    return render_template('daily_report/history.html', active_page='daily-report-history', entries=entries)
+#@daily_report_bp.route('/daily-report/history/', endpoint='history')
+#def history():
+ #   file_path = os.path.join(current_app.static_folder, 'reports', 'reports.xlsx')
+  #  entries = []
+   # if os.path.exists(file_path):
+    #    all_sheets = pd.read_excel(file_path, sheet_name=None)
+      #  for section, df in all_sheets.items():
+       #     for row in df.to_dict('records'):
+        #        entries.append({"section": section, **row})
+       # entries.sort(key=lambda x: x.get("Date"), reverse=True)
+   # return render_template('daily_report/history.html', active_page='daily-report-history', entries=entries)
 
 @daily_report_bp.route('/daily-report/download')
 def download_report():
