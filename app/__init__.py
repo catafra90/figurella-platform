@@ -1,11 +1,11 @@
-import os
-import logging
+# app/__init__.py
+import os, logging
 from flask import Flask, render_template
 
-# Import your blueprints
+# Import your blueprints (now including daily_report_bp)
 from app.home.routes         import home_bp
 from app.clients.routes      import clients_bp
-from app.daily_report.routes import daily_report_bp
+from app.daily_report       import daily_report_bp
 from app.charts.routes       import charts_bp
 
 def create_app():
@@ -16,16 +16,13 @@ def create_app():
         static_url_path='/static'
     )
 
-    # ─ enable INFO‐level logs ──────────────────────────────────────────────
+    # ─ enable INFO logging so your logger.info() calls show up ─
     app.logger.setLevel(logging.INFO)
-    # ──────────────────────────────────────────────────────────────────────
 
     app.secret_key = os.getenv('SECRET_KEY', 'Figurella2025')
-
-    # ensure the instance/ folder exists
     os.makedirs(app.instance_path, exist_ok=True)
 
-    # register all blueprints
+    # register blueprints
     app.register_blueprint(home_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(daily_report_bp)
