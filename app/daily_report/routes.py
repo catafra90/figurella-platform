@@ -13,15 +13,12 @@ daily_report_bp = Blueprint(
     'daily_report', __name__, template_folder='templates'
 )
 
-# — Helpers —
-
 def save_daily_report(report):
     current_app.logger.info(f"[save_daily_report] payload received: {report}")
 
-    # write into app/static/reports
-    reports_dir = os.path.join(current_app.static_folder, 'reports')
-    os.makedirs(reports_dir, exist_ok=True)
-    file_path = os.path.join(reports_dir, 'reports.xlsx')
+    # 1) Compute path to AI_Project root and reports.xlsx
+    project_root = os.path.abspath(os.path.join(current_app.root_path, os.pardir))
+    file_path = os.path.join(project_root, 'reports.xlsx')
     date = datetime.now().strftime("%Y-%m-%d")
 
     def add_date_column(df):
@@ -29,7 +26,7 @@ def save_daily_report(report):
             df.insert(0, 'Date', date)
         return df
 
-    # initialize workbook if missing
+    # 2) Initialize workbook if missing
     if not os.path.exists(file_path):
         with pd.ExcelWriter(file_path, engine="openpyxl") as w:
             pd.DataFrame(columns=["Date","client_name","package","revenue"]) \
@@ -43,10 +40,10 @@ def save_daily_report(report):
             pd.DataFrame(columns=["Date","attendance_done","no_show"]) \
               .to_excel(w, sheet_name="Attendance", index=False)
 
-    # append data to each sheet
+    # 3) Append data, but only if at least one field in each row is non-empty
     with pd.ExcelWriter(file_path, engine="openpyxl",
                         mode="a", if_sheet_exists="overlay") as w:
-        sheets = w.book.sheetnames
+        sheets  = w.book.sheetnames
         sections = {
             "sales":        ["client_name","package","revenue"],
             "leads":        ["name","date","source"],
@@ -54,49 +51,54 @@ def save_daily_report(report):
             "opportunities":["name","provider","description"]
         }
         for key, cols in sections.items():
-            df = pd.DataFrame(report.get(key, {}))
-            if df.empty:
+            df = pd.DataFrame(report.get(key, []))
+            if df.empty: 
                 continue
             df = add_date_column(df)
-            mask = df[cols].astype(str) \
-                     .apply(lambda r: ''.join(r).strip(), axis=1) != ''
+            # keep only rows where any of the key columns is non-empty
+            mask = df[cols].astype(str).apply(lambda r: bool(''.join(r).strip()), axis=1)
             df = df[mask]
-            sheet = key.capitalize()
-            if sheet in sheets and not df.empty:
-                start = w.sheets[sheet].max_row
-                df.to_excel(w, sheet_name=sheet,
-                            index=False, header=False, startrow=start)
+            if not df.empty and key.capitalize() in sheets:
+                start = w.sheets[key.capitalize()].max_row
+                df.to_excel(
+                    w,
+                    sheet_name=key.capitalize(),
+                    index=False,
+                    header=False,
+                    startrow=start
+                )
 
-        # attendance sheet
+        # Attendance block
         att = report.get("attendance", {})
         att_df = pd.DataFrame([att])
         att_df.insert(0, 'Date', date)
-        if not att_df.drop(columns="Date") \
-                     .replace('', None) \
-                     .dropna(how='all').empty:
+        # only append if at least one attendance field is non-empty
+        if not att_df.drop(columns="Date").replace('', None).dropna(how='all').empty:
             start = w.sheets["Attendance"].max_row
-            att_df.to_excel(w, sheet_name="Attendance",
-                            index=False, header=False, startrow=start)
+            att_df.to_excel(
+                w,
+                sheet_name="Attendance",
+                index=False,
+                header=False,
+                startrow=start
+            )
 
-    # send to Google Chat webhook if configured
-    webhook = os.getenv("GCHAT_WEBHOOK_URL")
+    # 4) Fire Google Chat webhook
+    webhook = os.getenv("GCHAT_WEBHOOK_URL") or os.getenv("GOOGLE_CHAT_WEBHOOK_URL")
     if webhook:
         try:
-            resp = requests.post(webhook, json={"text": f"✅ New report: {date}"})
-            current_app.logger.info("✅ GChat sent: %s", resp.status_code)
+            resp = requests.post(webhook, json={"text": f"✅ New report submitted: {date}"})
+            current_app.logger.info(f"✅ GChat sent: {resp.status_code} {resp.text}")
         except Exception as ex:
-            current_app.logger.warning("⚠️ GChat failed: %s", ex)
+            current_app.logger.error(f"⚠️ GChat failed: {ex}")
 
-
-# — Combined Wizard Route —
-
-@daily_report_bp.route('/daily-report/', methods=['GET', 'POST'])
+@daily_report_bp.route('/daily-report/', methods=['GET','POST'])
 def combined_report_wizard():
     if request.method == 'POST':
         if request.is_json:
-            return jsonify({"error": "Offline submission not supported"}), 400
+            return jsonify({"error": "Offline not supported"}), 400
 
-        report = json.loads(request.form.get('full_report_json', '{}'))
+        report = json.loads(request.form.get('full_report_json','{}'))
         save_daily_report(report)
         session.clear()
         return render_template(
@@ -109,28 +111,29 @@ def combined_report_wizard():
         active_page='daily-report'
     )
 
-
-# — Download Endpoint (optional) —
+# — Download endpoint for direct access if desired —  
 
 @daily_report_bp.route('/daily-report/download')
 def download_report():
-    path = os.path.join(current_app.static_folder, 'reports', 'reports.xlsx')
-    if not os.path.exists(path):
+    project_root = os.path.abspath(os.path.join(current_app.root_path, os.pardir))
+    file_path = os.path.join(project_root, 'reports.xlsx')
+    if not os.path.exists(file_path):
         return "Report not found", 404
-    return send_file(path, as_attachment=True, download_name='reports.xlsx')
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name='reports.xlsx'
+    )
 
-
-# — History Route — (restored)
+# — History Route —  
 
 @daily_report_bp.route('/daily-report/history/', endpoint='history')
 def history():
-    """
-    Combine all sheets from reports.xlsx and show entries sorted by Date.
-    """
-    path = os.path.join(current_app.static_folder, 'reports', 'reports.xlsx')
+    project_root = os.path.abspath(os.path.join(current_app.root_path, os.pardir))
+    file_path = os.path.join(project_root, 'reports.xlsx')
     entries = []
-    if os.path.exists(path):
-        all_sheets = pd.read_excel(path, sheet_name=None)
+    if os.path.exists(file_path):
+        all_sheets = pd.read_excel(file_path, sheet_name=None)
         for section, df in all_sheets.items():
             for row in df.to_dict('records'):
                 entries.append({"section": section, **row})
