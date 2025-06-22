@@ -70,11 +70,7 @@
               {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">
       Daily
     </a>
-    <a href="{{ url_for('daily_report.history') }}"
-       class="py-2 px-4 flex-1 text-center
-              {% if active_page=='daily-report-history' %}text-figurella-pink font-semibold{% endif %}">
-      History
-    </a>
+   
     <a href="{{ url_for('clients.clients') }}"
        class="py-2 px-4 flex-1 text-center
               {% if active_page=='clients' %}text-figurella-pink font-semibold{% endif %}">
