@@ -1,26 +1,25 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mt-20 text-center space-y-4">
+<div class="mt-20 text-center space-y-6">
 
-  <!-- Success Message -->
-  <div class="text-green-600 text-4xl">✅</div>
+  <!-- Success Icon & Message -->
+  <div class="text-green-600 text-5xl">✅</div>
   <h3 class="text-2xl font-bold text-gray-800">Report Submitted Successfully!</h3>
-  <p class="text-gray-600">You can close this tab or return to the Daily Report section.</p>
+  <p class="text-gray-600">
+    Your daily report has been saved. Download it here:
+    <a href="{{ url_for('static', filename='reports/reports.xlsx') }}"
+       target="_blank"
+       class="text-figurella-pink underline">
+      Download Excel File
+    </a>
+  </p>
 
   <!-- CTA Button -->
-  <a href="{{ url_for('daily_report.combined_report_wizard') }}" class="inline-block bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
+  <a href="{{ url_for('daily_report.combined_report_wizard') }}"
+     class="inline-block bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
     Submit Another Report
   </a>
 
 </div>
-
-<script>
-  // Redirect offline users to offline page
-  if (!navigator.onLine) {
-    location.href = "/offline";
-  }
-
-  // No legacy session storage for multi-step
-</script>
 {% endblock %}
