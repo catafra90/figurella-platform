@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask, render_template
 
 # Import your blueprints
@@ -15,6 +16,10 @@ def create_app():
         static_folder='static',
         static_url_path='/static'
     )
+
+    # ─── Enable INFO‐level logs so save_daily_report messages appear ───────────────
+    app.logger.setLevel(logging.INFO)
+    # ────────────────────────────────────────────────────────────────────────────────
 
     # secret key
     app.secret_key = os.getenv('SECRET_KEY', 'Figurella2025')
