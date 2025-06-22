@@ -8,7 +8,8 @@
   <!-- Tailwind CSS -->
   <link href="{{ url_for('static', filename='css/tailwind.min.css') }}" rel="stylesheet">
 
-  <!-- Branding -->
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="theme-color" content="#CC0066">
   <link rel="icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}" type="image/png">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/figurella-logo.png') }}">
@@ -32,9 +33,18 @@
       <img src="{{ url_for('static', filename='images/figurella-logo.png') }}"
            alt="Logo" class="mb-6 w-32 mx-auto">
       <nav class="space-y-3">
-        <a href="{{ url_for('home.index') }}" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='home' %}bg-gray-200 font-semibold{% endif %}">Home</a>
-        <a href="{{ url_for('daily_report.combined_report_wizard') }}" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='daily-report' %}bg-gray-200 font-semibold{% endif %}">Daily Report</a>
-        <a href="{{ url_for('clients.clients') }}" class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='clients' %}bg-gray-200 font-semibold{% endif %}">Clients</a>
+        <a href="{{ url_for('home.index') }}"
+           class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='home' %}bg-gray-200 font-semibold{% endif %}">
+          Home
+        </a>
+        <a href="{{ url_for('daily_report.combined_report_wizard') }}"
+           class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='daily-report' %}bg-gray-200 font-semibold{% endif %}">
+          Daily Report
+        </a>
+        <a href="{{ url_for('clients.clients') }}"
+           class="block px-3 py-2 rounded-md hover:bg-gray-100 {% if active_page=='clients' %}bg-gray-200 font-semibold{% endif %}">
+          Clients
+        </a>
       </nav>
     </aside>
 
@@ -46,20 +56,32 @@
 
   <!-- Mobile Bottom Nav -->
   <nav class="fixed bottom-0 w-full bg-white shadow border-t md:hidden flex justify-around text-sm z-50">
-    <a href="{{ url_for('home.index') }}" class="py-2 px-4 flex-1 text-center {% if active_page=='home' %}text-figurella-pink font-semibold{% endif %}">Home</a>
-    <a href="{{ url_for('daily_report.combined_report_wizard') }}" class="py-2 px-4 flex-1 text-center {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">Daily</a>
-    <a href="{{ url_for('clients.clients') }}" class="py-2 px-4 flex-1 text-center {% if active_page=='clients' %}text-figurella-pink font-semibold{% endif %}">Clients</a>
+    <a href="{{ url_for('home.index') }}"
+       class="py-2 px-4 flex-1 text-center {% if active_page=='home' %}text-figurella-pink font-semibold{% endif %}">
+      Home
+    </a>
+    <a href="{{ url_for('daily_report.combined_report_wizard') }}"
+       class="py-2 px-4 flex-1 text-center {% if active_page=='daily-report' %}text-figurella-pink font-semibold{% endif %}">
+      Daily
+    </a>
+    <a href="{{ url_for('clients.clients') }}"
+       class="py-2 px-4 flex-1 text-center {% if active_page=='clients' %}text-figurella-pink font-semibold{% endif %}">
+      Clients
+    </a>
   </nav>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const toggleBtn = document.getElementById('menuToggle');
-      toggleBtn?.addEventListener('click', () =>
-        document.querySelector('aside')?.classList.toggle('hidden')
-      );
+      document.getElementById('menuToggle')
+        ?.addEventListener('click', () =>
+          document.querySelector('aside')?.classList.toggle('hidden')
+        );
     });
   </script>
 
+  <!-- Your application scripts -->
+  <script src="{{ url_for('static', filename='js/sw-init.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/queue.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/combined.js') }}" defer></script>
 </body>
 </html>
