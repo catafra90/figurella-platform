@@ -12,9 +12,10 @@ daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates
 
 def save_daily_report(report):
     current_app.logger.info(f"[save_daily_report] payload received: {report}")
-    data_dir = os.path.join(current_app.root_path, '..', 'data')
-    os.makedirs(data_dir, exist_ok=True)
-    file_path = os.path.join(data_dir, 'reports.xlsx')
+    # Save Excel inside static/reports so Render can write it
+    reports_dir = os.path.join(current_app.root_path, 'static', 'reports')
+    os.makedirs(reports_dir, exist_ok=True)
+    file_path = os.path.join(reports_dir, 'reports.xlsx')
     date = datetime.now().strftime("%Y-%m-%d")
 
     def add_date_column(df):
@@ -48,7 +49,8 @@ def save_daily_report(report):
         }
         for key, cols in sections.items():
             df = pd.DataFrame(report.get(key, {}))
-            if df.empty: continue
+            if df.empty:
+                continue
             df = add_date_column(df)
             mask = df[cols].astype(str) \
                      .apply(lambda r: ''.join(r).strip(), axis=1) != ''
@@ -70,20 +72,14 @@ def save_daily_report(report):
             att_df.to_excel(w, sheet_name="Attendance",
                             index=False, header=False, startrow=start)
 
-    # Optional webhook
+    # Google Chat webhook
     webhook = os.getenv("GCHAT_WEBHOOK_URL")
     if webhook:
         try:
-            requests.post(webhook, json={"text": f"✅ New report: {date}"})
+            resp = requests.post(webhook, json={"text": f"✅ New report: {date}"})
+            current_app.logger.info("✅ GChat sent: %s", resp.status_code)
         except Exception as ex:
-            current_app.logger.warning("GChat failed: %s", ex)
-
-def handle_offline_submission(data):
-    try:
-        save_daily_report(data)
-        return jsonify({"message": "Offline report saved"}), 200
-    except Exception as err:
-        return jsonify({"error": str(err)}), 500
+            current_app.logger.warning("⚠️ GChat failed: %s", ex)
 
 # — Combined Wizard Route —
 
@@ -92,7 +88,7 @@ def handle_offline_submission(data):
 def combined_report_wizard():
     if request.method == 'POST':
         if request.is_json:
-            return handle_offline_submission(request.get_json())
+            return jsonify({"error": "Offline submission not supported"}), 400
 
         report = json.loads(request.form.get('full_report_json','{}'))
         save_daily_report(report)
@@ -107,17 +103,15 @@ def combined_report_wizard():
 
 @daily_report_bp.route('/daily-report/history/', endpoint='history')
 def history():
-    data_dir = os.path.join(current_app.root_path, '..', 'data')
-    file_path = os.path.join(data_dir, 'reports.xlsx')
+    file_path = os.path.join(current_app.root_path,
+                             'static', 'reports', 'reports.xlsx')
     entries = []
 
     if os.path.exists(file_path):
-        # Read and combine every sheet
         all_sheets = pd.read_excel(file_path, sheet_name=None)
         for section, df in all_sheets.items():
             for row in df.to_dict('records'):
                 entries.append({"section": section, **row})
-        # Sort newest first
         entries.sort(key=lambda x: x.get("Date"), reverse=True)
 
     return render_template('daily_report/history.html',
