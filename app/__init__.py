@@ -1,14 +1,16 @@
 # app/__init__.py
-import os, logging
+import os
+import logging
 from flask import Flask, render_template
 
-# Import your blueprints (now including daily_report_bp)
-from app.home.routes         import home_bp
-from app.clients.routes      import clients_bp
-from app.daily_report       import daily_report_bp
-from app.charts.routes       import charts_bp
+# Import your blueprints
+from app.home.routes    import home_bp
+from app.clients.routes import clients_bp
+from app.daily_report   import daily_report_bp
+from app.charts.routes  import charts_bp
 
 def create_app():
+    # create the Flask app
     app = Flask(
         __name__,
         instance_relative_config=True,
@@ -16,9 +18,10 @@ def create_app():
         static_url_path='/static'
     )
 
-    # ─ enable INFO logging so your logger.info() calls show up ─
+    # ── enable INFO logging so logger.info() shows in Render logs ──
     app.logger.setLevel(logging.INFO)
 
+    # secret key & instance folder
     app.secret_key = os.getenv('SECRET_KEY', 'Figurella2025')
     os.makedirs(app.instance_path, exist_ok=True)
 
@@ -28,6 +31,7 @@ def create_app():
     app.register_blueprint(daily_report_bp)
     app.register_blueprint(charts_bp)
 
+    # offline fallback page
     @app.route('/offline')
     def offline():
         return render_template('offline.html'), 200
