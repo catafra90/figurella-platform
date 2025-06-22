@@ -1,3 +1,15 @@
+from flask import Blueprint, render_template, request, session, jsonify, current_app, send_file
+import pandas as pd
+from datetime import datetime
+import os, requests, json
+
+# ← THIS MUST BE HERE:
+daily_report_bp = Blueprint(
+    'daily_report',
+    __name__,
+    template_folder='templates'
+)
+
 def save_daily_report(report):
     current_app.logger.info(f"[save_daily_report] payload: {report}")
 
