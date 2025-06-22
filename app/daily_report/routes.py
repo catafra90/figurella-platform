@@ -1,25 +1,25 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Blueprint, render_template, request, session, jsonify, current_app
+from flask import (
+    Blueprint, render_template, request,
+    session, jsonify, current_app, send_file
+)
 import pandas as pd
 from datetime import datetime
 import os, requests, json
 
-daily_report_bp = Blueprint('daily_report', __name__, template_folder='templates')
-
-# — Helpers —
+daily_report_bp = Blueprint(
+    'daily_report', __name__, template_folder='templates'
+)
 
 def save_daily_report(report):
-    current_app.logger.info(f"[save_daily_report] payload received: {report}")
+    current_app.logger.info(f"[save_daily_report] payload: {report}")
 
-    # 1) Build path inside your app's static folder
-    reports_dir = os.path.join(current_app.static_folder, 'reports')
+    # 1) Write into the instance folder, which is writable on Render
+    reports_dir = os.path.join(current_app.instance_path, 'reports')
     os.makedirs(reports_dir, exist_ok=True)
-
-    # 2) Excel file path
     file_path = os.path.join(reports_dir, 'reports.xlsx')
-
     date = datetime.now().strftime("%Y-%m-%d")
 
     def add_date_column(df):
@@ -44,7 +44,7 @@ def save_daily_report(report):
     # Append data
     with pd.ExcelWriter(file_path, engine="openpyxl",
                         mode="a", if_sheet_exists="overlay") as w:
-        sheets = w.book.sheetnames
+        sheets  = w.book.sheetnames
         sections = {
             "sales":        ["client_name","package","revenue"],
             "leads":        ["name","date","source"],
@@ -53,8 +53,7 @@ def save_daily_report(report):
         }
         for key, cols in sections.items():
             df = pd.DataFrame(report.get(key, {}))
-            if df.empty:
-                continue
+            if df.empty: continue
             df = add_date_column(df)
             mask = df[cols].astype(str)\
                      .apply(lambda r: ''.join(r).strip(), axis=1) != ''
@@ -76,8 +75,11 @@ def save_daily_report(report):
             att_df.to_excel(w, sheet_name="Attendance",
                             index=False, header=False, startrow=start)
 
-    # Send to Google Chat (if configured)
-    webhook = os.getenv("GCHAT_WEBHOOK_URL")
+    # 3) Webhook—support either env var name
+    webhook = (
+        os.getenv("GCHAT_WEBHOOK_URL")
+        or os.getenv("GOOGLE_CHAT_WEBHOOK")
+    )
     if webhook:
         try:
             resp = requests.post(webhook, json={"text": f"✅ New report: {date}"})
@@ -85,40 +87,45 @@ def save_daily_report(report):
         except Exception as ex:
             current_app.logger.warning("⚠️ GChat failed: %s", ex)
 
-# — Combined Wizard Route —
-
-@daily_report_bp.route('/daily-report/', endpoint='combined_report_wizard',
-                       methods=['GET','POST'])
+@daily_report_bp.route('/daily-report/', methods=['GET','POST'])
 def combined_report_wizard():
     if request.method == 'POST':
-        # we no longer support offline JSON
         if request.is_json:
-            return jsonify({"error": "Offline submission not supported"}), 400
-
-        report = json.loads(request.form.get('full_report_json','{}'))
+            return jsonify({"error": "Offline not supported"}), 400
+        report = json.loads(request.form.get('full_report_json', '{}'))
         save_daily_report(report)
         session.clear()
-        return render_template('daily_report/submitted.html',
-                               active_page='daily-report')
+        return render_template(
+            'daily_report/submitted.html', active_page='daily-report'
+        )
+    return render_template(
+        'daily_report/combined.html', active_page='daily-report'
+    )
 
-    return render_template('daily_report/combined.html',
-                           active_page='daily-report')
+# — Download Endpoint —  
+@daily_report_bp.route('/daily-report/download')
+def download_report():
+    path = os.path.join(
+        current_app.instance_path, 'reports', 'reports.xlsx'
+    )
+    if not os.path.exists(path):
+        return "Report not found", 404
+    return send_file(path,
+                     as_attachment=True,
+                     download_name='reports.xlsx')
 
-# — History Route —
-
-@daily_report_bp.route('/daily-report/history/', endpoint='history')
+@daily_report_bp.route('/daily-report/history/')
 def history():
-    file_path = os.path.join(current_app.static_folder,
-                             'reports', 'reports.xlsx')
+    path = os.path.join(current_app.instance_path, 'reports', 'reports.xlsx')
     entries = []
-
-    if os.path.exists(file_path):
-        all_sheets = pd.read_excel(file_path, sheet_name=None)
-        for section, df in all_sheets.items():
+    if os.path.exists(path):
+        sheets = pd.read_excel(path, sheet_name=None)
+        for section, df in sheets.items():
             for row in df.to_dict('records'):
                 entries.append({"section": section, **row})
-        entries.sort(key=lambda x: x.get("Date"), reverse=True)
-
-    return render_template('daily_report/history.html',
-                           active_page='daily-report-history',
-                           entries=entries)
+        entries.sort(key=lambda x: x["Date"], reverse=True)
+    return render_template(
+        'daily_report/history.html',
+        active_page='daily-report-history',
+        entries=entries
+    )

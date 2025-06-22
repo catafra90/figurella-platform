@@ -9,13 +9,13 @@
 
   <!-- Download Link -->
   <p class="text-gray-600">
-    Your daily report has been saved.
-    <a href="{{ url_for('static', filename='reports/reports.xlsx') }}"
-       target="_blank"
-       class="text-figurella-pink underline">
-      Download Excel File
-    </a>
-  </p>
+  Your daily report has been saved.
+  <a href="{{ url_for('daily_report.download_report') }}"
+     class="text-figurella-pink underline">
+    Download Latest Excel File
+  </a>
+</p>
+
 
   <!-- Submit Again Button -->
   <a href="{{ url_for('daily_report.combined_report_wizard') }}"
