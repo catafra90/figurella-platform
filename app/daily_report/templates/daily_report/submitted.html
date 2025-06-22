@@ -6,8 +6,10 @@
   <!-- Success Icon & Message -->
   <div class="text-green-600 text-5xl">✅</div>
   <h3 class="text-2xl font-bold text-gray-800">Report Submitted Successfully!</h3>
+
+  <!-- Download Link -->
   <p class="text-gray-600">
-    Your daily report has been saved. Download it here:
+    Your daily report has been saved. 
     <a href="{{ url_for('static', filename='reports/reports.xlsx') }}"
        target="_blank"
        class="text-figurella-pink underline">
@@ -15,7 +17,7 @@
     </a>
   </p>
 
-  <!-- CTA Button -->
+  <!-- Submit Again Button -->
   <a href="{{ url_for('daily_report.combined_report_wizard') }}"
      class="inline-block bg-figurella text-white px-6 py-2 rounded-full shadow hover:bg-pink-700 transition">
     Submit Another Report
