@@ -16,13 +16,16 @@ def create_app():
         static_url_path='/static'
     )
 
-    # ─── Enable INFO‐level logs so save_daily_report messages appear ─────────
+    # ─ enable INFO‐level logs ──────────────────────────────────────────────
     app.logger.setLevel(logging.INFO)
-    # ────────────────────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────
 
     app.secret_key = os.getenv('SECRET_KEY', 'Figurella2025')
+
+    # ensure the instance/ folder exists
     os.makedirs(app.instance_path, exist_ok=True)
 
+    # register all blueprints
     app.register_blueprint(home_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(daily_report_bp)
